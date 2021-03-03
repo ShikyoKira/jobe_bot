@@ -52,6 +52,23 @@ npm install discord.js
 sudo npm i -g pm2
 ```
 
+8. Edit index.js by adding your [public ip](http://www.whatismyip.com) and bot token generated from discord
+```
+vi index.js
+```
+```
+const discord = require('discord.js');
+const client = new discord.Client();
+const { exec } = require('child_process');
+
+const PUBLIC_IP = '<SERVER_PUBLIC_IP>';       <--- Replace this with your public ip
+const DISCORD_TOKEN = '<BOT_TOKEN>';          <--- Replace this with your bot token 
+
+function serverCtl(direction, msg) {
+```
+
+9. Press ESC and type `:wq!` to save and quit
+
 <br>
 
 ## Operations
