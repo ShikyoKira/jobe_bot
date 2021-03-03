@@ -103,3 +103,46 @@ pm2 restart index.js
 pm2 logs
 ```
 
+
+## Discord Commands
+
+- To start the server
+```
+!valheim start
+```
+
+<br>
+
+- To stop the server
+```
+!valheim stop
+```
+
+<br>
+
+- To restart the server
+```
+!valheim restart
+```
+
+<br>
+
+- To check server status
+```
+!valheim status
+```
+
+<br>
+
+- To check info
+```
+!help
+```
+
+<br>
+
+- To ping the bot
+```
+!ping
+```
+
