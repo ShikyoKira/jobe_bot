@@ -47,7 +47,7 @@ cd jobe_bot
 npm install discord.js
 ```
 
-7. Install PM2 Product Process Manager (For server)
+7. Install PM2 Product Process Manager (For server). Skip this step if you have done it
 ```
 sudo npm i -g pm2
 ```
