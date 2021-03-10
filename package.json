@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^12.5.1"
+    "discord.js": "^12.5.1",
+    "fs": "0.0.1-security",
+    "public-ip": "^4.0.3"
   }
 }

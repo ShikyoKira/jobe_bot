@@ -106,3 +106,10 @@ dist
 
 # config file with discord keys
 config.json
+
+# node modules
+node_modules/
+
+# player online status files
+playerlist/online/*
+playerlist/offline/*

@@ -1,93 +1,153 @@
-const Discord = require("discord.js");
-const config = require("./config.json");
+const discord = require('discord.js');
+const client = new discord.Client();
 const { exec } = require('child_process');
+const publicIp = require('public-ip');
+const fs = require('fs');
 
-const client = new Discord.Client();
+const PUBLIC_IP = '<SERVER_PUBLIC_IP>';
+const DISCORD_TOKEN = '<BOT_TOKEN>';
 
-try {
-	client.login(config.BOT_TOKEN);
-	console.log("You have logged in successfully");
-} catch(err) {
-	console.log(err);
+function serverCtl(direction, msg) {
+  console.log(`taking server ${direction}`);
+  msg.react('⏳');
+  exec(`sudo systemctl ${direction} valheimserver.service`, (err) => {
+    if(err) {
+      msg.reply(`There was an error: ${err}`);
+      console.log(err)
+      return;
+    }
+
+    msg.reply(`Server is now ${direction}`);
+  });
 }
 
+function isServerActive(discord, msg) {
+   exec("systemctl status valheimserver.service | egrep Active | sed 's/^[[:space:]]*//'", (err, stdout, stderr) => {
+        if (err) {
+            console.log(err);
+        } else {
+            let output = stdout;
+            let stat = output.split(" ")[1];
 
+            switch (stat) {
+                case "active":
+                    // these embeds could 100% be turned into a function but im good for now
+                    const upEmbed = new discord.MessageEmbed()
+                        .setColor("#3CB371")
+                        .setTitle("Valheim Server Status")
+                        .setDescription("Server is up!")
+                        .attachFiles(['./serverUp.gif'])
+                        .setImage("attachment://serverUp.gif");
+                    msg.reply(upEmbed);
+                    break;
+                case "inactive":
+                    const downEmbed = new discord.MessageEmbed()
+                        .setColor("#FF4500")
+                        .setTitle("Valheim Server Status")
+                        .setDescription("Server is inactive - try restarting!");
+                    msg.reply(downEmbed);
+                    break;
+                default:
+                    const unknownEmbed = new discord.MessageEmbed()
+                        .setColor("#FF4500")
+                        .setTitle("Valheim Server Status")
+                        .setDescription("Server is in an unknown or failed state");
+                    msg.reply(unknownEmbed);
+                    console.log(stat);
+                    break;
+            }
+        }
+    });
+}
 
-const prefix = "!";
+function sendInfo(msg)
+{
+   msg.reply('\ntype `!ping` to check if I\'m responsive or not'
+	   + '\ntype `!valheim start` to start the server'
+	   + '\ntype `!valheim stop` to stop the server'
+	   + '\ntype `!valheim restart` to restart the server'
+	   + '\ntype `!valheim status` to get server status'
+   	   + '\ntype `!valheim players` to get online status for all players');
+}
 
-client.on("message", function(message) {
-	if (message.author.bot) return;
-	if(!message.content.startsWith(prefix)) return;
+function showOnlinePlayers()
+{
+   var text = '\n__Player(s) Currently Online__'
+            + '\n```diff';
 
-	const commandBody = message.content.slice(prefix.length);
-	const args = commandBody.split(' ');
-	const command = args.shift().toLowerCase();
+   var files = fs.readdirSync('playerlist/online/');
 
-	switch(command) {
-		case "restart":
-			exec("sudo systemctl restart valheimserver.service", (err, stdout, stderr) => {
-				if (err) {
-					const errorRestart = new Discord.MessageEmbed()
-						.setColor("#FF4500")
-						.setTitle("Valheim Restart")
-						.setDescription("Error restarting valheim server");
-					message.reply(errorRestart);
-				}
-				else {
-					console.log(stdout);
-					const restartEmbed = new Discord.MessageEmbed()
-						.setColor("#3CB371")
-						.setTitle("Valheim Restart")
-						.setDescription("Server has been restarted");
-					message.reply(restartEmbed);
-				}
+   if (files.length == 0) {
+       text += '\n+';
+   }
 
-				if (stderr){
-					console.log(stderr);
-				}
+   files.forEach(file => {
+       text += `\n+ ${file}`;
+   });
+   text += '```';
+   return text;
+}
 
-			});
-			break;
-		case "status":
-			exec("systemctl status valheimserver.service | egrep Active | sed 's/^[[:space:]]*//'", (err, stdout, stderr) => {
-				if (err) {
-					console.log(err);
-				} else {
-					let output = stdout;
-					let stat = output.split(" ")[1];
-					
-					switch (stat) {
-						case "active":
-							// these embeds could 100% be turned into a function but im good for now
-							const upEmbed = new Discord.MessageEmbed()
-								.setColor("#3CB371")
-								.setTitle("Valheim Server Status")
-								.setDescription("Server is up!")
-								.attachFiles(['./serverUp.gif'])
-								.setImage("attachment://serverUp.gif");
-							message.reply(upEmbed);
-							break;
-						case "inactive":
-							const downEmbed = new Discord.MessageEmbed()
-								.setColor("#FF4500")
-								.setTitle("Valheim Server Status")
-								.setDescription("Server is inactive - try restarting!");
-							message.reply(downEmbed);
-							break;
-						default:
-							const unknownEmbed = new Discord.MessageEmbed()
-								.setColor("#FF4500")
-								.setTitle("Valheim Server Status")
-								.setDescription("Server is in an unknown or failed state");
-							message.reply(unknownEmbed);
-							console.log(stat);
-							break;
-					}
-				}
-			});
-			break;
-		default:
-			message.reply("I have no idea what that means");
-			break;
-	}
+function showOfflinePlayers()
+{
+   var text = '\n__Player(s) Currently Offline__'
+            + '\n```diff';
+   var files = fs.readdirSync('playerlist/offline/');
+   
+   if (files.length == 0) {
+       text += '\n-';
+   }
+
+   files.forEach(file => {
+       text += `\n- ${file}`;
+   });
+   text += '```';
+   return text;
+}
+
+function showPlayersStatus(msg)
+{
+   var textmsg = showOnlinePlayers();
+   textmsg += showOfflinePlayers();
+   msg.reply(textmsg);
+}	
+
+client.on('ready', () => console.log(`Logged in as ${client.user.tag}!`));
+
+client.on('message', msg => {
+  if(!msg.content.startsWith('!')) return;
+
+  switch(msg.content) {
+
+  case '!ping': 
+    msg.reply(`Pong!\nLatency: ${Date.now() - msg.createdTimestamp}ms\nAPI latency: ${Math.round(client.ws.ping)}ms`);
+    break;
+  case '!valheim start': 
+    serverCtl('start', msg);
+    break;
+  case '!valheim stop': 
+    serverCtl('stop', msg);
+    break;
+  case '!valheim restart':
+    serverCtl('restart', msg);
+    break;
+  case "!valheim status":
+    isServerActive(discord, msg);
+    break;
+  case "!valheim ip":
+    publicIp.v4().then((ip) => {
+      msg.reply(ip);
+    });
+    break;
+  case '!valheim players':
+    showPlayersStatus(msg);
+    break;
+  case '!help':
+    sendInfo(msg);
+    break;
+  default:
+    return;
+  }
 });
+
+client.login(DISCORD_TOKEN);
