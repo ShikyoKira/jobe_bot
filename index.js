@@ -4,7 +4,6 @@ const { exec } = require('child_process');
 const publicIp = require('public-ip');
 const fs = require('fs');
 
-const PUBLIC_IP = '<SERVER_PUBLIC_IP>';
 const DISCORD_TOKEN = '<BOT_TOKEN>';
 
 function serverCtl(direction, msg) {
