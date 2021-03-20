@@ -3,6 +3,8 @@ const client = new discord.Client();
 const { exec } = require('child_process');
 const publicIp = require('public-ip');
 const fs = require('fs');
+const rgx = /!valheim mods (add|remove) (.+)/
+const modfile = 'mods.txt';
 
 const PUBLIC_IP = '<SERVER_PUBLIC_IP>';
 const DISCORD_TOKEN = '<BOT_TOKEN>';
@@ -112,6 +114,40 @@ function showPlayersStatus(msg)
    msg.reply(textmsg);
 }	
 
+function addMods(mod)
+{
+   fs.readFile(modfile, function (err, data) {
+     if (err) return console.log(err);
+
+     var result = `${data}${mod}\n`;
+     fs.writeFile(modfile, function (err) {
+	if (err) return console.log(err);
+     });
+   });
+}
+
+function removeMod(mod)
+{
+   fs.readFile(modfile, function (err, data) {
+     if (err) return console.log(err);
+
+     var modrgx = new RegExp(`${mod}\n`, 'g');
+     var result = data.replace(modrgx, '');
+     fs.writeFile(modfile, function (err) {
+        if (err) return console.log(err);
+     });
+   });
+}
+
+function showMods(msg)
+{
+   fs.readFile(modfile, function (err, data) {
+     if (err) return console.log(err);
+
+     msg.reply(`\n${data}`);
+   });
+}
+
 client.on('ready', () => console.log(`Logged in as ${client.user.tag}!`));
 
 client.on('message', msg => {
@@ -121,32 +157,44 @@ client.on('message', msg => {
 
   case '!ping': 
     msg.reply(`Pong!\nLatency: ${Date.now() - msg.createdTimestamp}ms\nAPI latency: ${Math.round(client.ws.ping)}ms`);
-    break;
+    return;
   case '!valheim start': 
     serverCtl('start', msg);
-    break;
+    return;
   case '!valheim stop': 
     serverCtl('stop', msg);
-    break;
+    return;
   case '!valheim restart':
     serverCtl('restart', msg);
-    break;
+    return;
   case "!valheim status":
     isServerActive(discord, msg);
-    break;
+    return;
   case "!valheim ip":
     publicIp.v4().then((ip) => {
       msg.reply(ip);
     });
-    break;
+    return;
   case '!valheim players':
     showPlayersStatus(msg);
-    break;
+    return;
   case '!help':
     sendInfo(msg);
-    break;
-  default:
     return;
+  case '!valheim mods':
+    showMods(msg);
+    return;
+  }
+
+  const match = msg.content.match(rgx);
+
+  if (!match) return;
+
+  if(match[1] === 'add') {
+    addMod(match[2]);
+  }
+  else {
+    removeMod(match[2]);
   }
 });
 
