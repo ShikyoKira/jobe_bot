@@ -6,7 +6,6 @@ const fs = require('fs');
 const rgx = /!valheim mods (add|remove) (.+)/
 const modfile = 'mods.txt';
 
-const PUBLIC_IP = '<SERVER_PUBLIC_IP>';
 const DISCORD_TOKEN = '<BOT_TOKEN>';
 
 function serverCtl(direction, msg) {
