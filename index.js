@@ -4,6 +4,7 @@ const { exec } = require('child_process');
 const publicIp = require('public-ip');
 const fs = require('fs');
 const rgx = /!valheim mods (add|remove) (.+)/
+const existrgx = /[a-zA-Z]/
 const modfile = 'mods.txt';
 
 const DISCORD_TOKEN = '<BOT_TOKEN>';
@@ -115,7 +116,7 @@ function showPlayersStatus(msg)
 
 function addMod(mod, msg)
 {
-   fs.readFile(modfile, function (err, data) {
+   fs.readFile(modfile, 'utf8', function (err, data) {
      if (err) return console.log(err);
 
      if (data.includes(`${mod}\n`)) {
@@ -124,15 +125,17 @@ function addMod(mod, msg)
      }
 
      var result = `${data}${mod}\n`;
-     fs.writeFile(modfile, result, function (err) {
+     fs.writeFile(modfile, result, 'utf8', function (err) {
 	if (err) return console.log(err);
+
+	msg.reply('Mod added');
      });
    });
 }
 
-function removeMod(mod)
+function removeMod(mod, msg)
 {
-   fs.readFile(modfile, function (err, data) {
+   fs.readFile(modfile, 'utf8', function (err, data) {
      if (err) return console.log(err);
 
      if (!data.includes(`${mod}\n`)) {
@@ -140,18 +143,25 @@ function removeMod(mod)
 	return;
      }
 
-     var modrgx = new RegExp(`${mod}\n`, 'g');
-     var result = data.replace(modrgx, '');
-     fs.writeFile(modfile, result, function (err) {
+     const modrgx = new RegExp(`${mod}\n`, 'g');
+     const result = data.toString().replace(modrgx, '');
+     fs.writeFile(modfile, result, 'utf8', function (err) {
         if (err) return console.log(err);
+
+	msg.reply('Mod removed');
      });
    });
 }
 
 function showMods(msg)
 {
-   fs.readFile(modfile, function (err, data) {
+   fs.readFile(modfile, 'utf8', function (err, data) {
      if (err) return console.log(err);
+
+     if (!existrgx.test(data)) {
+        msg.reply('No mod in mod list. Use `!valheim mods add [link]` to add mod');
+	return;
+     }
 
      msg.reply(`\n\`\`\`\n${data}\n\`\`\``);
    });
