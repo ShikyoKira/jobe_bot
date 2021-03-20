@@ -113,13 +113,18 @@ function showPlayersStatus(msg)
    msg.reply(textmsg);
 }	
 
-function addMods(mod)
+function addMod(mod, msg)
 {
    fs.readFile(modfile, function (err, data) {
      if (err) return console.log(err);
 
+     if (data.includes(`${mod}\n`)) {
+        msg.reply('Mod already exist in mod list');
+	return;
+     }
+
      var result = `${data}${mod}\n`;
-     fs.writeFile(modfile, function (err) {
+     fs.writeFile(modfile, result, function (err) {
 	if (err) return console.log(err);
      });
    });
@@ -130,9 +135,14 @@ function removeMod(mod)
    fs.readFile(modfile, function (err, data) {
      if (err) return console.log(err);
 
+     if (!data.includes(`${mod}\n`)) {
+        msg.reply('Mod cannot be found in the mod list');
+	return;
+     }
+
      var modrgx = new RegExp(`${mod}\n`, 'g');
      var result = data.replace(modrgx, '');
-     fs.writeFile(modfile, function (err) {
+     fs.writeFile(modfile, result, function (err) {
         if (err) return console.log(err);
      });
    });
@@ -143,7 +153,7 @@ function showMods(msg)
    fs.readFile(modfile, function (err, data) {
      if (err) return console.log(err);
 
-     msg.reply(`\n${data}`);
+     msg.reply(`\n\`\`\`\n${data}\n\`\`\``);
    });
 }
 
@@ -190,10 +200,10 @@ client.on('message', msg => {
   if (!match) return;
 
   if(match[1] === 'add') {
-    addMod(match[2]);
+    addMod(match[2], msg);
   }
   else {
-    removeMod(match[2]);
+    removeMod(match[2], msg);
   }
 });
 
